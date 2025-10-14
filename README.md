@@ -1,5 +1,15 @@
 # Robotics Toolbox for Python
 
+> **Note about this fork**  
+> This repository is a fork of the upstream Robotics Toolbox for Python with the following differences:  
+> - **Joint wrapping behavior**: joint solutions are only wrapped when doing so helps satisfy joint limits, preventing wrap-induced limit violations.  
+> - **Performance**: DHRobot now uses LRU caching to speed up repeated computations.  
+> - **C++ IK functions**: uses LDLT decomposition instead of `.inverse()` for efficiency and numerical stability per Eigen documentation.  
+> - **Upstream changes**: incorporates updates from the upstream "future" branch.  
+>  
+> Upstream project: https://github.com/petercorke/robotics-toolbox-python
+
+
 [![A Python Robotics Package](https://raw.githubusercontent.com/petercorke/robotics-toolbox-python/master/.github/svg/py_collection.min.svg)](https://github.com/petercorke/robotics-toolbox-python)
 [![Powered by Spatial Maths](https://raw.githubusercontent.com/petercorke/spatialmath-python/master/.github/svg/sm_powered.min.svg)](https://github.com/petercorke/spatialmath-python)
 [![QUT Centre for Robotics Open Source](https://github.com/qcr/qcr.github.io/raw/master/misc/badge.svg)](https://qcr.github.io)
