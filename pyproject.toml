@@ -184,8 +184,8 @@ skip = ["pp*", "*musllinux*"]
 
 [tool.cibuildwheel.macos]
 
-# Build `x86_64` and `arm64` wheels on an Intel runner.
-# Note that the `arm64` wheel cannot be tested in this configuration.
+# Build separate x86_64 and arm64 wheels on an Intel runner.
+# arm64 wheels cannot be tested on the Intel runner (tests are skipped for cp313).
 archs = ["x86_64", "arm64"]
 
 [tool.cibuildwheel.linux]

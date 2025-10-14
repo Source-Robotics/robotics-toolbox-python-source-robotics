@@ -348,12 +348,12 @@ class PyPlot2(Connector):
                     "q" + str(j),
                     qlim[0, j],
                     qlim[1, j],
-                    np.degrees(q[j]),
-                    "% .1f°",
+                    valinit=float(np.degrees(q[j])),
+                    valfmt="% .1f°",
                 )
             else:
                 slider = Slider(
-                    self.axjoint[j], "q" + str(j), qlim[0, j], qlim[1, j], q[j], "% .1f"
+                    self.axjoint[j], "q" + str(j), qlim[0, j], qlim[1, j], valinit=float(q[j]), valfmt="% .1f"
                 )
 
             slider.on_changed(lambda x: update(x, text, robot))

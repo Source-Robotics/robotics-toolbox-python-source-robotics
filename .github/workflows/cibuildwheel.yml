@@ -34,9 +34,10 @@ jobs:
           CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "pp* *musllinux*"
           CIBW_ARCHS_LINUX: "x86_64 aarch64"
-          CIBW_ARCHS_MACOS: "universal2"
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_ARCHS_WINDOWS: "AMD64"
           CIBW_TEST_COMMAND: "python -c \"import numpy, roboticstoolbox; print(roboticstoolbox.__version__)\""
+          CIBW_TEST_SKIP: "cp313-macosx_*"
           CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0"
         run: |
           python -m pip install -U pip
