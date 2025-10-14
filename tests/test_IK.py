@@ -299,7 +299,7 @@ class TestIK(unittest.TestCase):
 
         Tep = ur5.eval([0, -0.3, 0, -2.2, 0, 2.0])
 
-        solver = rtb.IK_GN(pinv=False, joint_limits=True, seed=0, tol=tol)
+        solver = rtb.IK_GN(pinv=True, joint_limits=True, seed=0, tol=tol)
 
         sol = solver.solve(ur5, Tep)
 

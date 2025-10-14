@@ -41,7 +41,7 @@ class KinovaGen3(Robot):
             manufacturer="Kinova",
             urdf_string=urdf_string,
             urdf_filepath=urdf_filepath,
-            gripper_links=links[10],
+            gripper_links=links[9],
         )
 
         # self.qdlim = np.array([
