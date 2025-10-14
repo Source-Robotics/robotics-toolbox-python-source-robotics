@@ -103,7 +103,7 @@ rtbtool = "roboticstoolbox.bin.rtbtool:main"
 
 [build-system]
 
-requires = ["setuptools"]
+requires = ["setuptools", "numpy==1.26.4"]
 build-backend = "setuptools.build_meta"
 
 
