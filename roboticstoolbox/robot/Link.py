@@ -327,6 +327,10 @@ class BaseLink(SceneNode, ABC):
         else:
             self._v = None
             self._isjoint = False
+        
+        # Invalidate robot ETS cache when link ETS changes
+        if self._robot is not None:
+            self._robot.ets.cache_clear()
 
     def __repr__(self) -> str:
         s = self.__class__.__name__ + "("

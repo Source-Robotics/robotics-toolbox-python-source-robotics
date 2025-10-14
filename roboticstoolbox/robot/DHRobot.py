@@ -5,6 +5,7 @@
 
 from collections import namedtuple
 from email import message
+from functools import lru_cache
 from roboticstoolbox.tools.data import rtb_path_to_datafile
 import warnings
 import copy
@@ -875,6 +876,7 @@ class DHRobot(Robot):
 
         return tw, T[-1]
 
+    @lru_cache(maxsize=1)
     def ets(self, *args, **kwargs) -> ETS:
         """
         Robot kinematics as an elemenary transform sequence

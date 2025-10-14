@@ -1,65 +1,84 @@
-name: Build all Wheels
+name: Build wheels (release + manual)
 
 on:
   release:
     types: [created]
-  workflow_dispatch:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write  # needed to upload assets to the Release
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Wheels (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-      
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-11]
-        include:
-          - os: ubuntu-20.04
-            cibw_archs: "aarch64"
-            
+        os: [ubuntu-latest, windows-latest, macos-13]
     steps:
-    
-      # Set up emulation for arm on linux
-      - name: Set up QEMU
-        if: matrix.cibw_archs == 'aarch64'
-        uses: docker/setup-qemu-action@v2
+      - uses: actions/checkout@v4
+
+      - name: Enable QEMU for Linux ARM64
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
-      - uses: actions/checkout@v3
 
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.11.3
-
-      - uses: actions/upload-artifact@v3
+      - uses: actions/setup-python@v5
         with:
-          path: ./wheelhouse/*.whl
+          python-version: '3.11'
 
-  build_sdist:
-    name: Build source distribution
+      - name: Build wheels with cibuildwheel
+        env:
+          CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*"
+          CIBW_SKIP: "pp* *musllinux*"
+          CIBW_ARCHS_LINUX: "x86_64 aarch64"
+          CIBW_ARCHS_MACOS: "universal2"
+          CIBW_ARCHS_WINDOWS: "AMD64"
+          CIBW_TEST_COMMAND: "python -c \"import numpy, roboticstoolbox; print(roboticstoolbox.__version__)\""
+          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0"
+        run: |
+          python -m pip install -U pip
+          pip install -U cibuildwheel
+          python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Upload wheels (artifact for manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+      - name: Upload wheels to Release (on releases)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wheelhouse/*.whl
+
+  sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Build sdist
-        run: pipx run build --sdist
-
-      - uses: actions/upload-artifact@v3
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
         with:
+          python-version: '3.11'
+          
+      - name: Build sdist
+        run: |
+          python -m pip install -U build
+          python -m build --sdist
+          
+      - name: Upload sdist (artifact for manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
           path: dist/*.tar.gz
           
-  upload_pypi:
-    needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v3
+      - name: Upload sdist to Release (on releases)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
         with:
-          # unpacks default artifact into dist/
-          name: artifact
-          path: dist
-
-      - uses: pypa/gh-action-pypi-publish@v1.5.0
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_PASSWORD }}
-          
-          
+          files: dist/*.tar.gz

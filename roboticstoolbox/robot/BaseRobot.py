@@ -1227,6 +1227,7 @@ class BaseRobot(SceneNode, DynamicsMixin, ABC, Generic[LinkType]):
             self._tool = T.A
         else:
             self._tool = T
+        self.ets.cache_clear()
 
     @property
     def base(self) -> SE3:
@@ -1264,6 +1265,7 @@ class BaseRobot(SceneNode, DynamicsMixin, ABC, Generic[LinkType]):
                 self._T = T.A
             else:
                 self._T = T
+        self.ets.cache_clear()
 
     # --------------------------------------------------------------------- #
 
