@@ -4,7 +4,7 @@ name = "roboticstoolbox-python"
 
 description = "A Python library for robotics education and research"
 
-version = "1.1.1"
+version = "1.2.0"
 
 authors = [
     { name = "Jesse Haviland", email = "j.haviland@qut.edu.au" },
@@ -103,7 +103,7 @@ rtbtool = "roboticstoolbox.bin.rtbtool:main"
 
 [build-system]
 
-requires = ["setuptools", "oldest-supported-numpy"]
+requires = ["setuptools", "numpy>=2.0.0"]
 build-backend = "setuptools.build_meta"
 
 
@@ -133,7 +133,6 @@ packages = [
 [tool.black]
 
 line-length = 88
-target_version = ['py37']
 args = '--experimental-string-processing'
 
 include = '\.pyi?$'

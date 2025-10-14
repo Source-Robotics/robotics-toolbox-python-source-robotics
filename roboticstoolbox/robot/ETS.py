@@ -5,6 +5,7 @@
 @author: Peter Corke
 """
 
+from __future__ import annotations
 from collections import UserList
 import numpy as np
 from numpy.random import uniform
@@ -36,8 +37,8 @@ from roboticstoolbox.fknm import (
     IK_LM_c,
 )
 from copy import deepcopy
-from roboticstoolbox.robot.ET import ET, ET2
-from typing import Union, overload, List, Set, Tuple
+from roboticstoolbox.robot.ET import ET, ET2, BaseET
+from typing import Union, overload, List, Set, Tuple, TypeVar
 from typing_extensions import Literal as L
 from sys import version_info
 from roboticstoolbox.tools.types import ArrayLike, NDArray
@@ -50,6 +51,8 @@ if version_info >= (3, 9):
     c_property = cached_property
 else:  # pragma: nocover
     c_property = property
+
+T = TypeVar("T", bound="BaseETS")
 
 
 class BaseETS(UserList):
@@ -435,12 +438,10 @@ class BaseETS(UserList):
         return self._m
 
     @overload
-    def data(self: "ETS") -> List[ET]:
-        ...  # pragma: nocover
+    def data(self: "ETS") -> List[ET]: ...  # pragma: nocover
 
     @overload
-    def data(self: "ETS2") -> List[ET2]:
-        ...  # pragma: nocover
+    def data(self: "ETS2") -> List[ET2]: ...  # pragma: nocover
 
     @property
     def data(self):
@@ -448,25 +449,21 @@ class BaseETS(UserList):
 
     @data.setter
     @overload
-    def data(self: "ETS", new_data: List[ET]):
-        ...  # pragma: nocover
+    def data(self: "ETS", new_data: List[ET]): ...  # pragma: nocover
 
     @data.setter
     @overload
-    def data(self: "ETS", new_data: List[ET2]):
-        ...  # pragma: nocover
+    def data(self: "ETS", new_data: List[ET2]): ...  # pragma: nocover
 
     @data.setter
     def data(self, new_data):
         self._data = new_data
 
     @overload
-    def pop(self: "ETS", i: int = -1) -> ET:
-        ...  # pragma: nocover
+    def pop(self: "ETS", i: int = -1) -> ET: ...  # pragma: nocover
 
     @overload
-    def pop(self: "ETS2", i: int = -1) -> ET2:
-        ...  # pragma: nocover
+    def pop(self: "ETS2", i: int = -1) -> ET2: ...  # pragma: nocover
 
     def pop(self, i=-1):
         """
@@ -506,12 +503,10 @@ class BaseETS(UserList):
         return item
 
     @overload
-    def split(self: "ETS") -> List["ETS"]:
-        ...  # pragma: nocover
+    def split(self: "ETS") -> List["ETS"]: ...  # pragma: nocover
 
     @overload
-    def split(self: "ETS2") -> List["ETS2"]:
-        ...  # pragma: nocover
+    def split(self: "ETS2") -> List["ETS2"]: ...  # pragma: nocover
 
     def split(self):
         """
@@ -547,15 +542,7 @@ class BaseETS(UserList):
 
         return segments
 
-    @overload
-    def inv(self: "ETS") -> "ETS":
-        ...  # pragma: nocover
-
-    @overload
-    def inv(self: "ETS2") -> "ETS2":
-        ...  # pragma: nocover
-
-    def inv(self):
+    def inv(self: T) -> T:
         r"""
         Inverse of ETS
 
@@ -589,20 +576,19 @@ class BaseETS(UserList):
         return self.__class__([et.inv() for et in reversed(self.data)])
 
     @overload
-    def __getitem__(self: "ETS", i: int) -> ET:
-        ...  # pragma: nocover
+    def __getitem__(self: "BaseETS", i: int) -> BaseET: ...
 
     @overload
-    def __getitem__(self: "ETS", i: slice) -> List[ET]:
-        ...  # pragma: nocover
+    def __getitem__(self: "ETS", i: int) -> ET: ...
 
     @overload
-    def __getitem__(self: "ETS2", i: int) -> ET2:
-        ...  # pragma: nocover
+    def __getitem__(self: "ETS", i: slice) -> List[ET]: ...
 
     @overload
-    def __getitem__(self: "ETS2", i: slice) -> List[ET2]:
-        ...  # pragma: nocover
+    def __getitem__(self: "ETS2", i: int) -> ET2: ...
+
+    @overload
+    def __getitem__(self: "ETS2", i: slice) -> List[ET2]: ...
 
     def __getitem__(self, i):
         """
@@ -629,6 +615,44 @@ class BaseETS(UserList):
 
         """
         return self.data[i]  # can be [2] or slice, eg. [3:5]
+
+    @overload
+    def __setitem__(self: "BaseETS", i: int, value: BaseET): ...
+
+    @overload
+    def __setitem__(self: "ETS", i: int, value: ET): ...
+
+    @overload
+    def __setitem__(self: "ETS", i: slice, value: List[ET]): ...
+
+    @overload
+    def __setitem__(self: "ETS2", i: int, value: ET2): ...
+
+    @overload
+    def __setitem__(self: "ETS2", i: slice, value: List[ET2]): ...
+
+    def __setitem__(self, i, value):
+        """
+        Set an item in the ETS
+
+        Parameters
+        ----------
+        i
+            the index
+        value
+            the value to set
+
+        Examples
+        --------
+        .. runblock:: pycon
+        >>> from roboticstoolbox import ET
+        >>> e = ET.Rz() * ET.tx(1) * ET.Rz() * ET.tx(1)
+        >>> e[1] = ET.tx(2)
+        >>> e
+
+        """
+        self.data[i] = value
+        self._update_internals()
 
     def __deepcopy__(self, memo):
         new_data = []
@@ -1394,6 +1418,9 @@ class ETS(BaseETS):
         n = self.n
 
         if J0 is None:
+            if q is None:
+                raise ValueError("Either J0 or q must be provided")
+
             q = getvector(q, None)
             J0 = self.jacob0(q, tool=tool)
         else:
@@ -1498,6 +1525,9 @@ class ETS(BaseETS):
         n = self.n
 
         if Je is None:
+            if q is None:
+                raise ValueError("Either Je or q must be provided")
+
             q = getvector(q, None)
             Je = self.jacobe(q, tool=tool)
         else:
@@ -1569,7 +1599,8 @@ class ETS(BaseETS):
 
         T = self.eval(q, tool=tool)
         J = self.jacob0(q, tool=tool)
-        A = rotvelxform(t2r(T), full=True, inverse=True, representation=representation)
+        gamma = t2r(T)[:3, :3]
+        A = rotvelxform(gamma, full=True, inverse=True, representation=representation)
         return A @ J
 
     def jacobm(self, q: ArrayLike) -> NDArray:
@@ -1634,8 +1665,8 @@ class ETS(BaseETS):
     def manipulability(
         self,
         q,
-        method: L["yoshikawa", "minsingular", "invcondition"] = "yoshikawa",
-        axes: Union[L["all", "trans", "rot"], List[bool]] = "all",
+        method: L["yoshikawa", "minsingular", "invcondition"] = "yoshikawa",  # noqa
+        axes: Union[L["all", "trans", "rot"], List[bool]] = "all",  # noqa
     ):
         """
         Manipulability measure
@@ -1968,7 +1999,7 @@ class ETS(BaseETS):
         mask: Union[NDArray, None] = None,
         joint_limits: bool = True,
         k: float = 1.0,
-        method: L["chan", "wampler", "sugihara"] = "chan",
+        method: L["chan", "wampler", "sugihara"] = "chan",  # noqa
     ) -> Tuple[NDArray, int, int, int, float]:
         r"""
         Fast levenberg-Marquadt Numerical Inverse Kinematics Solver
@@ -2398,7 +2429,7 @@ class ETS(BaseETS):
         joint_limits: bool = True,
         seed: Union[int, None] = None,
         k: float = 1.0,
-        method: L["chan", "wampler", "sugihara"] = "chan",
+        method: L["chan", "wampler", "sugihara"] = "chan",  # noqa
         kq: float = 0.0,
         km: float = 0.0,
         ps: float = 0.0,
