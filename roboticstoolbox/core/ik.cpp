@@ -399,8 +399,7 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                // LDLT is recommended here over .inverse for efficiency and numerical stability
-                q += (J.transpose() * We * J + Wn).ldlt().solve(g);
+                q += (J.transpose() * We * J + Wn).inverse() * g;
                 // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
@@ -507,8 +506,7 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                // LDLT is recommended here over .inverse for efficiency and numerical stability
-                q += (J.transpose() * We * J + Wn).ldlt().solve(g);
+                q += (J.transpose() * We * J + Wn).inverse() * g;
                 // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
@@ -619,8 +617,7 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                // LDLT is recommended here over .inverse for efficiency and numerical stability
-                q += (J.transpose() * We * J + Wn).ldlt().solve(g);
+                q += (J.transpose() * We * J + Wn).inverse() * g;
                 // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
