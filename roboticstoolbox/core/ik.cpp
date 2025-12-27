@@ -399,8 +399,8 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                q += (J.transpose() * We * J + Wn).inverse() * g;
-                // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
+                // q += (J.transpose() * We * J + Wn).inverse() * g;
+                q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
             }
@@ -506,8 +506,8 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                q += (J.transpose() * We * J + Wn).inverse() * g;
-                // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
+                // q += (J.transpose() * We * J + Wn).inverse() * g;
+                q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
             }
@@ -617,8 +617,8 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                q += (J.transpose() * We * J + Wn).inverse() * g;
-                // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
+                // q += (J.transpose() * We * J + Wn).inverse() * g;
+                q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
             }
