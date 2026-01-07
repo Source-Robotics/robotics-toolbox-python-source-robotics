@@ -30,6 +30,8 @@ except ImportError:
             self._T = np.eye(4)
         def __len__(self):
             return len(self._children)
+        def __iter__(self):
+            return iter(self._children)
 
 from typing import List, Union, Tuple, overload
 

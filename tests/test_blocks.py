@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
 import unittest
+import numpy as np
+
+# Skip tests if numpy 2.x due to bdsim compatibility issues
+if np.__version__.startswith("2"):
+    raise unittest.SkipTest("bdsim not compatible with numpy 2.x") from None
 
 try:
     from bdsim import BDSim
 except ModuleNotFoundError:
-    raise unittest.SkipTest("bdsim not found, skipping all tests in test_blocks.py") from None
+    raise unittest.SkipTest("bdsim not found") from None
 
 from spatialmath import SE3
 from spatialmath.base import tr2x
