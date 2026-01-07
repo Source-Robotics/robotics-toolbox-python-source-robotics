@@ -7,7 +7,10 @@ Created on Fri May 1 14:04:04 2020
 import numpy.testing as nt
 import numpy as np
 import roboticstoolbox as rtb
-import spatialgeometry as gm
+import pytest
+
+gm = pytest.importorskip("spatialgeometry")
+
 import unittest
 import spatialmath as sm
 from roboticstoolbox.robot.Link import BaseLink

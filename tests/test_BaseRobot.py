@@ -10,7 +10,9 @@ from roboticstoolbox import Link, ETS, ET, Robot
 from spatialmath import SE3
 import unittest
 from copy import deepcopy
-from swift import Swift
+import pytest
+
+Swift = pytest.importorskip("swift").Swift
 
 from roboticstoolbox.robot.Robot import BaseRobot
 

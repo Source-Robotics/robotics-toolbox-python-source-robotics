@@ -7,7 +7,10 @@ import numpy as np
 import roboticstoolbox as rtb
 import unittest
 import os
-import spatialgeometry as sg
+import pytest
+
+sg = pytest.importorskip("spatialgeometry")
+
 from spatialmath.base import tr2jac
 
 # from spatialmath import SE3

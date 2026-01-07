@@ -8,11 +8,12 @@ import numpy.testing as nt
 import numpy as np
 import roboticstoolbox as rtb
 from roboticstoolbox import ERobot, ET, ETS, Link
+import pytest
 
-# from spatialmath import SE2, SE3
+gm = pytest.importorskip("spatialgeometry")
+
 import unittest
 import spatialmath as sm
-import spatialgeometry as gm
 from math import pi, sin, cos
 
 try:
