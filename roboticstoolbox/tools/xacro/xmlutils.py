@@ -30,7 +30,11 @@
 # Authors: Stuart Glaser, William Woodall, Robert Haschke
 # Maintainer: Morgan Quigley <morgan@osrfoundation.org>
 
+import sys
 import xml.dom.minidom
+
+# Python 3.13+ added 'attr' parameter to minidom._write_data
+_PY313_PLUS = sys.version_info >= (3, 13)
 
 
 def first_child_element(elt):
@@ -121,7 +125,10 @@ def fixed_writexml(self, writer, indent="", addindent="", newl=""):   # pragma: 
 
     for a_name in a_names:
         writer.write(" %s=\"" % a_name)
-        xml.dom.minidom._write_data(writer, attrs[a_name].value)
+        if _PY313_PLUS:
+            xml.dom.minidom._write_data(writer, attrs[a_name].value, True)
+        else:
+            xml.dom.minidom._write_data(writer, attrs[a_name].value)
         writer.write("\"")
     if self.childNodes:
         if len(self.childNodes) == 1 \
