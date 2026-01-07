@@ -10,7 +10,12 @@ from roboticstoolbox.backends.Connector import Connector
 from roboticstoolbox.backends.PyPlot.RobotPlot import RobotPlot
 from roboticstoolbox.backends.PyPlot.EllipsePlot import EllipsePlot, ShapePlot
 from spatialmath.base.argcheck import getvector
-from spatialgeometry import Shape
+
+# Lazy import for optional visualization dependencies
+try:
+    from spatialgeometry import Shape
+except ImportError:
+    Shape = None  # type: ignore
 
 # from roboticstoolbox.tools import Ticker
 

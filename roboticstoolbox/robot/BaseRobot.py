@@ -35,8 +35,44 @@ from spatialmath.base.argcheck import (
 )
 
 from ansitable import ANSITable, Column
-from swift import Swift
-from spatialgeometry import SceneNode
+
+# Lazy imports for optional visualization dependencies
+try:
+    from swift import Swift
+    _swift_available = True
+except ImportError:
+    Swift = None  # type: ignore
+    _swift_available = False
+
+try:
+    from spatialgeometry import SceneNode
+    _spatialgeometry_available = True
+except ImportError:
+    _spatialgeometry_available = False
+    # Stub class when spatialgeometry not available
+    class SceneNode:  # type: ignore
+        """Stub for SceneNode when spatialgeometry is not installed."""
+        def __init__(self):
+            self._T = np.eye(4)
+            self._scene_children = []
+
+
+def _require_swift(feature: str = "This feature"):
+    """Raise ImportError if swift is not installed."""
+    if not _swift_available:
+        raise ImportError(
+            f"{feature} requires swift. "
+            "Install with: pip install swift-sim"
+        )
+
+
+def _require_spatialgeometry(feature: str = "This feature"):
+    """Raise ImportError if spatialgeometry is not installed."""
+    if not _spatialgeometry_available:
+        raise ImportError(
+            f"{feature} requires spatialgeometry. "
+            "Install with: pip install spatialgeometry"
+        )
 
 from roboticstoolbox.fknm import Robot_link_T
 import roboticstoolbox as rtb
@@ -2176,7 +2212,7 @@ class BaseRobot(SceneNode, DynamicsMixin, ABC, Generic[LinkType]):
 
     def _get_graphical_backend(
         self, backend: Union[L["swift", "pyplot", "pyplot2"], None] = None  # noqa
-    ) -> Union[Swift, PyPlot, PyPlot2]:
+    ) -> Union["Swift", PyPlot, PyPlot2]:
         default = self.default_backend
 
         # figure out the right default
@@ -2204,15 +2240,16 @@ class BaseRobot(SceneNode, DynamicsMixin, ABC, Generic[LinkType]):
                 raise NotImplementedError(
                     "Plotting in Swift is not implemented for DHRobots yet"
                 )
-            try:
-                # yes, use it
+            if _swift_available:
                 from roboticstoolbox.backends.swift import Swift
 
                 env = Swift()
                 return env
-            except ModuleNotFoundError:
+            else:
                 if using_backend == "swift":
-                    print("Swift is not installed, install it using pip or conda")
+                    # User explicitly requested swift, raise clear error
+                    _require_swift("Swift visualization backend")
+                # Otherwise fall back to pyplot
                 using_backend = "pyplot"
 
         if using_backend is None:
@@ -2246,7 +2283,7 @@ class BaseRobot(SceneNode, DynamicsMixin, ABC, Generic[LinkType]):
         movie: Union[str, None] = None,
         loop: bool = False,
         **kwargs,
-    ) -> Union[Swift, PyPlot, PyPlot2]:
+    ) -> Union["Swift", PyPlot, PyPlot2]:
         """
         Graphical display and animation
 
@@ -2814,7 +2851,7 @@ class BaseRobot(SceneNode, DynamicsMixin, ABC, Generic[LinkType]):
         # Make an empty 3D figure
         env = self._get_graphical_backend(backend)
 
-        if isinstance(env, Swift):  # pragma: nocover
+        if Swift is not None and isinstance(env, Swift):  # pragma: nocover
             raise TypeError("teach() not supported for Swift backend")
 
         # Add the self to the figure in readonly mode

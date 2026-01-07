@@ -6,8 +6,24 @@
 
 import numpy as np
 import roboticstoolbox as rtb
-import spatialgeometry as gm
 import copy
+
+# Lazy import for optional visualization dependencies
+try:
+    import spatialgeometry as gm
+    _spatialgeometry_available = True
+except ImportError:
+    gm = None  # type: ignore
+    _spatialgeometry_available = False
+
+
+def _require_spatialgeometry(feature: str = "This feature"):
+    """Raise ImportError if spatialgeometry is not installed."""
+    if not _spatialgeometry_available:
+        raise ImportError(
+            f"{feature} requires spatialgeometry. "
+            "Install with: pip install spatialgeometry"
+        )
 import os
 import xml.etree.ElementTree as ETT
 from spatialmath import SE3
@@ -396,21 +412,43 @@ class Geometry(URDFType):
         ):  # pragma nocover
             raise ValueError("At least one geometry element must be set")
 
+        self._ob = None  # Lazy-loaded geometry object
+
         if box is not None:
             self.box = box
-            self.ob = gm.Cuboid(box.size)
+            self._geom_type = "box"
 
         if cylinder is not None:
             self.cylinder = cylinder
-            self.ob = gm.Cylinder(cylinder.radius, cylinder.length)
+            self._geom_type = "cylinder"
 
         if sphere is not None:
             self.sphere = sphere
-            self.ob = gm.Sphere(sphere.radius)
+            self._geom_type = "sphere"
 
         if mesh is not None:
             self.mesh = mesh
-            self.ob = gm.Mesh(mesh.filename, scale=mesh.scale)
+            self._geom_type = "mesh"
+
+    @property
+    def ob(self):
+        """Geometry object (requires spatialgeometry)."""
+        if self._ob is None:
+            _require_spatialgeometry("URDF geometry visualization")
+            # Create geometry object on first access
+            if hasattr(self, '_box') and self._box is not None:
+                self._ob = gm.Cuboid(self._box.size)
+            elif hasattr(self, '_cylinder') and self._cylinder is not None:
+                self._ob = gm.Cylinder(self._cylinder.radius, self._cylinder.length)
+            elif hasattr(self, '_sphere') and self._sphere is not None:
+                self._ob = gm.Sphere(self._sphere.radius)
+            elif hasattr(self, '_mesh') and self._mesh is not None:
+                self._ob = gm.Mesh(self._mesh.filename, scale=self._mesh.scale)
+        return self._ob
+
+    @ob.setter
+    def ob(self, value):
+        self._ob = value
 
     @property
     def box(self):
@@ -495,7 +533,8 @@ class Collision(URDFType):
         self.geometry = geometry
         self.name = name
         self.origin = origin
-        self.geometry.ob.T = origin
+        if _spatialgeometry_available:
+            self.geometry.ob.T = origin
 
     @property
     def geometry(self):
@@ -559,18 +598,21 @@ class Visual(URDFType):
 
     def __init__(self, geometry, name=None, origin=None, material=None):
         self.geometry = geometry
-        geometry.ob.T = origin
         self.name = name
         self.origin = origin
         self.material = material
 
-        # Do not set material color yet. The top level URDF colors have not
-        # been parsed/defined yet so we do not know what 'Grey' or 'Blue2'
-        # mean yet. We set colors after these top level definitions come in
+        # Set geometry transform and color only if spatialgeometry is available
+        if _spatialgeometry_available:
+            geometry.ob.T = origin
 
-        # Do set it if the color was defined in line by the URDF
-        if material is not None and material.color is not None:
-            self.geometry.ob.color = material.color
+            # Do not set material color yet. The top level URDF colors have not
+            # been parsed/defined yet so we do not know what 'Grey' or 'Blue2'
+            # mean yet. We set colors after these top level definitions come in
+
+            # Do set it if the color was defined in line by the URDF
+            if material is not None and material.color is not None:
+                self.geometry.ob.color = material.color
 
     @property
     def geometry(self):
@@ -1680,13 +1722,15 @@ class URDF(URDFType):
 
             # add the visuals to visual list
             try:
-                elink.geometry = [v.geometry.ob for v in link.visuals]
+                if _spatialgeometry_available:
+                    elink.geometry = [v.geometry.ob for v in link.visuals]
             except AttributeError:  # pragma nocover
                 pass
 
             #  add collision objects to collision object list
             try:
-                elink.collision = [col.geometry.ob for col in link.collisions]
+                if _spatialgeometry_available:
+                    elink.collision = [col.geometry.ob for col in link.collisions]
             except AttributeError:  # pragma nocover
                 pass
 
@@ -1877,7 +1921,8 @@ class URDF(URDFType):
                     continue
                 if v.material.name in self.material_map:
                     v.material = self._material_map[v.material.name]
-                    v.geometry.ob.color = v.material.color
+                    if _spatialgeometry_available:
+                        v.geometry.ob.color = v.material.color
                 else:
                     self._materials.append(v.material)
                     self._material_map[v.material.name] = v.material

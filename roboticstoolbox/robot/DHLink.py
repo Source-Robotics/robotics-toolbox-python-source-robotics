@@ -13,8 +13,13 @@ from spatialmath import SE3
 from typing import List, Union
 from functools import wraps
 from numpy import ndarray, cos, sin, array
-from spatialgeometry import Shape
 from copy import deepcopy
+
+# Lazy import for optional visualization dependencies
+try:
+    from spatialgeometry import Shape
+except ImportError:
+    Shape = None  # type: ignore
 
 # _eps = np.finfo(np.float64).eps
 

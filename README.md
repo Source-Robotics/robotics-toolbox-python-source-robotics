@@ -1,11 +1,12 @@
 # Robotics Toolbox for Python
 
-> **Note about this fork**  
-> This repository is a fork of the upstream Robotics Toolbox for Python with the following differences:  
-> - **Joint wrapping behavior**: joint solutions are only wrapped when doing so helps satisfy joint limits, preventing wrap-induced limit violations.  
-> - **Performance**: DHRobot now uses LRU caching to speed up repeated computations.  
-> - **Upstream changes**: incorporates updates from the upstream "future" branch.  
->  
+> **Note about this fork**
+> This repository is a fork of the upstream Robotics Toolbox for Python with the following differences:
+> - **Joint wrapping behavior**: joint solutions are only wrapped when doing so helps satisfy joint limits, preventing wrap-induced limit violations.
+> - **Performance**: DHRobot now uses LRU caching to speed up repeated computations.
+> - **Optional visualization deps**: `spatialgeometry` and `swift-sim` are now optional. Core kinematics (FK, Jacobian, IK) work without them. Install with `pip install roboticstoolbox-python[viz]` if you need Swift visualization or geometry features.
+> - **Upstream changes**: incorporates updates from the upstream "future" branch.
+>
 > Upstream project: https://github.com/petercorke/robotics-toolbox-python
 
 
@@ -110,15 +111,15 @@ pip3 install roboticstoolbox-python
 Available options are:
 
 - `collision` install collision checking with [pybullet](https://pybullet.org)
+- `viz` install visualization dependencies ([Swift](https://github.com/jhavl/swift) and spatialgeometry)
 
 Put the options in a comma separated list like
 
 ```shell script
-pip3 install roboticstoolbox-python[optionlist]
+pip3 install roboticstoolbox-python[viz,collision]
 ```
 
-[Swift](https://github.com/jhavl/swift), a web-based visualizer, is
-installed as part of Robotics Toolbox.
+Note: Core kinematics (FK, Jacobian, IK) work without any optional dependencies.
 
 ### From GitHub
 

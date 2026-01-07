@@ -12,14 +12,12 @@ authors = [
 ]
 
 dependencies = [
-    "numpy==1.26.4",
+    "numpy>=1.22",
     "spatialmath-python>=1.1.5",
-    "spatialgeometry>=1.0.0",
     "pgraph-python",
     "scipy",
     "matplotlib",
     "ansitable",
-    "swift-sim>=1.0.0",
     "rtb-data",
     "progress",
     "typing_extensions",
@@ -69,6 +67,11 @@ repository = "https://github.com/petercorke/robotics-toolbox-python"
 
 collision = ["pybullet"]
 
+viz = [
+    "spatialgeometry>=1.0.0",
+    "swift-sim>=1.0.0",
+]
+
 dev = [
     "black",
     "pytest",
@@ -101,7 +104,7 @@ rtbtool = "roboticstoolbox.bin.rtbtool:main"
 
 [build-system]
 
-requires = ["setuptools", "numpy==1.26.4"]
+requires = ["setuptools", "numpy>=1.22"]
 build-backend = "setuptools.build_meta"
 
 

@@ -30,7 +30,24 @@ from spatialmath.base.argcheck import (
     verifymatrix,
 )
 
-from spatialgeometry import Shape, CollisionShape, Cylinder
+# Lazy imports for optional visualization dependencies
+try:
+    from spatialgeometry import Shape, CollisionShape, Cylinder
+    _spatialgeometry_available = True
+except ImportError:
+    Shape = None  # type: ignore
+    CollisionShape = None  # type: ignore
+    Cylinder = None  # type: ignore
+    _spatialgeometry_available = False
+
+
+def _require_spatialgeometry(feature: str = "This feature"):
+    """Raise ImportError if spatialgeometry is not installed."""
+    if not _spatialgeometry_available:
+        raise ImportError(
+            f"{feature} requires spatialgeometry. "
+            "Install with: pip install spatialgeometry"
+        )
 
 from spatialmath import (
     SE3,
@@ -1264,6 +1281,7 @@ class Robot(BaseRobot[Link], RobotKinematicsMixin):
             [x, y, z] point on the shape (in the world frame)
 
         """
+        _require_spatialgeometry("Collision detection")
 
         if not skip:
             self._update_link_tf(q)
@@ -1307,6 +1325,7 @@ class Robot(BaseRobot[Link], RobotKinematicsMixin):
             True if shapes have collided
 
         """
+        _require_spatialgeometry("Collision detection")
 
         if not skip:
             self._update_link_tf(q)

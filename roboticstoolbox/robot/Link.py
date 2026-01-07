@@ -8,7 +8,29 @@ from functools import wraps
 from spatialmath.base import getvector, isscalar, isvector, ismatrix
 from spatialmath import SE3, SE2
 from ansitable import ANSITable, Column
-from spatialgeometry import Shape, SceneNode, SceneGroup
+
+# Lazy imports for optional visualization dependencies
+try:
+    from spatialgeometry import Shape, SceneNode, SceneGroup
+    _spatialgeometry_available = True
+except ImportError:
+    Shape = None  # type: ignore
+    _spatialgeometry_available = False
+    # Stub classes when spatialgeometry not available
+    class SceneNode:  # type: ignore
+        """Stub for SceneNode when spatialgeometry is not installed."""
+        def __init__(self):
+            self._scene_children = []
+            self._T = np.eye(4)
+    class SceneGroup:  # type: ignore
+        """Stub for SceneGroup when spatialgeometry is not installed."""
+        def __init__(self, scene_children=None):
+            self._children = scene_children or []
+            self._scene_children = []
+            self._T = np.eye(4)
+        def __len__(self):
+            return len(self._children)
+
 from typing import List, Union, Tuple, overload
 
 import roboticstoolbox as rtb
