@@ -23,7 +23,7 @@ from spatialmath.base import (
     getmatrix,
 )
 from roboticstoolbox import rtb_get_param
-from roboticstoolbox.robot.IK import IK_GN, IK_LM, IK_NR, IK_QP
+from roboticstoolbox.robot.IK import IK_GN, IK_LM, IK_NR, IK_QP, IKResultBuffer
 
 from roboticstoolbox.fknm import (
     ETS_init,
@@ -2000,7 +2000,8 @@ class ETS(BaseETS):
         joint_limits: bool = True,
         k: float = 1.0,
         method: L["chan", "wampler", "sugihara"] = "chan",  # noqa
-    ) -> Tuple[NDArray, int, int, int, float]:
+        result: Union["IKResultBuffer", None] = None,
+    ) -> Union[Tuple[NDArray, int, int, int, float], None]:
         r"""
         Fast levenberg-Marquadt Numerical Inverse Kinematics Solver
 
@@ -2144,7 +2145,7 @@ class ETS(BaseETS):
         """  # noqa
 
         return IK_LM_c(
-            self._fknm, Tep, q0, ilimit, slimit, tol, joint_limits, mask, k, method
+            self._fknm, Tep, q0, ilimit, slimit, tol, joint_limits, mask, k, method, result
         )
 
     def ik_NR(

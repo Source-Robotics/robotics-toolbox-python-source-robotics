@@ -20,6 +20,10 @@
 #include <iostream>
 #include <string.h>
 
+// Pre-interned strings for zero-allocation attribute access in IK result buffer
+static PyObject *g_str_q = NULL;
+static PyObject *g_str_scalars = NULL;
+
 static PyMethodDef fknmMethods[] = {
     {"Angle_Axis",
      (PyCFunction)Angle_Axis,
@@ -103,6 +107,14 @@ static struct PyModuleDef fknmmodule =
 PyMODINIT_FUNC PyInit_fknm(void)
 {
     import_array();
+
+    // Pre-intern strings for zero-allocation attribute access
+    g_str_q = PyUnicode_InternFromString("q");
+    g_str_scalars = PyUnicode_InternFromString("_scalars");
+    if (g_str_q == NULL || g_str_scalars == NULL) {
+        return NULL;
+    }
+
     return PyModule_Create(&fknmmodule);
 }
 
@@ -398,15 +410,18 @@ extern "C"
         PyArrayObject *py_np_Tep;
         PyObject *py_ets, *py_ret, *py_Tep, *py_q0, *py_np_q0, *py_we, *py_np_we;
         PyObject *py_tup, *py_it, *py_search, *py_solution, *py_E;
+        PyObject *py_result = NULL;  // Optional IKResultBuffer object for zero-alloc
         npy_intp dim[1] = {1};
         int ilimit, slimit, q0_used = 0, we_used = 0, reject_jl;
+        int result_provided = 0;
         double tol, E, lambda;
         const char *method;
+        npy_float64 *np_scalars = NULL;  // Pointer to result._scalars array
 
         int it = 0, search = 1, solution = 0;
 
         if (!PyArg_ParseTuple(
-                args, "OOOiidiOds",
+                args, "OOOiidiOds|O",
                 &py_ets,
                 &py_Tep,
                 &py_q0,
@@ -416,7 +431,8 @@ extern "C"
                 &reject_jl,
                 &py_we,
                 &lambda,
-                &method))
+                &method,
+                &py_result))
             return NULL;
 
         if (!_check_array_type(py_Tep))
@@ -471,26 +487,84 @@ extern "C"
         // Convert to col major here
         Matrix4dc Tep = row_Tep;
 
-        py_ret = PyArray_EMPTY(1, dim, NPY_DOUBLE, 0);
+        // Check if IKResultBuffer was provided for zero-allocation mode
+        if (py_result != NULL && py_result != Py_None)
+        {
+            // Extract result.q array using pre-interned string (zero allocation)
+            PyObject *py_q_arr = PyObject_GetAttr(py_result, g_str_q);
+            if (py_q_arr == NULL)
+            {
+                PyErr_SetString(PyExc_AttributeError, "result object must have 'q' attribute");
+                Py_DECREF(py_np_Tep);
+                if (q0_used) Py_DECREF(py_np_q0);
+                if (we_used) Py_DECREF(py_np_we);
+                return NULL;
+            }
+            if (!PyArray_Check(py_q_arr) ||
+                PyArray_TYPE((PyArrayObject *)py_q_arr) != NPY_DOUBLE ||
+                PyArray_NDIM((PyArrayObject *)py_q_arr) != 1 ||
+                PyArray_DIM((PyArrayObject *)py_q_arr, 0) != ets->n ||
+                !PyArray_ISCONTIGUOUS((PyArrayObject *)py_q_arr))
+            {
+                PyErr_SetString(PyExc_ValueError,
+                    "result.q must be contiguous float64 array with size matching number of joints");
+                Py_DECREF(py_q_arr);
+                Py_DECREF(py_np_Tep);
+                if (q0_used) Py_DECREF(py_np_q0);
+                if (we_used) Py_DECREF(py_np_we);
+                return NULL;
+            }
+
+            // Extract result._scalars array using pre-interned string (zero allocation)
+            PyObject *py_scalars_arr = PyObject_GetAttr(py_result, g_str_scalars);
+            if (py_scalars_arr == NULL)
+            {
+                PyErr_SetString(PyExc_AttributeError, "result object must have '_scalars' attribute");
+                Py_DECREF(py_q_arr);
+                Py_DECREF(py_np_Tep);
+                if (q0_used) Py_DECREF(py_np_q0);
+                if (we_used) Py_DECREF(py_np_we);
+                return NULL;
+            }
+            if (!PyArray_Check(py_scalars_arr) ||
+                PyArray_TYPE((PyArrayObject *)py_scalars_arr) != NPY_DOUBLE ||
+                PyArray_NDIM((PyArrayObject *)py_scalars_arr) != 1 ||
+                PyArray_DIM((PyArrayObject *)py_scalars_arr, 0) != 4 ||
+                !PyArray_ISCONTIGUOUS((PyArrayObject *)py_scalars_arr))
+            {
+                PyErr_SetString(PyExc_ValueError,
+                    "result._scalars must be contiguous float64 array with size 4");
+                Py_DECREF(py_scalars_arr);
+                Py_DECREF(py_q_arr);
+                Py_DECREF(py_np_Tep);
+                if (q0_used) Py_DECREF(py_np_q0);
+                if (we_used) Py_DECREF(py_np_we);
+                return NULL;
+            }
+
+            py_ret = py_q_arr;  // Use result.q as output buffer
+            np_scalars = (npy_float64 *)PyArray_DATA((PyArrayObject *)py_scalars_arr);
+            result_provided = 1;
+
+            Py_DECREF(py_scalars_arr);  // We have the pointer, don't need the reference
+        }
+        else
+        {
+            py_ret = PyArray_EMPTY(1, dim, NPY_DOUBLE, 0);
+        }
         np_ret = (npy_float64 *)PyArray_DATA((PyArrayObject *)py_ret);
         MapVectorX ret(np_ret, ets->n);
 
-        // std::cout << Tep << std::endl;
-        // std::cout << ret << std::endl;
-
         if (method[0] == 's')
         {
-            // std::cout << "sugi" << std::endl;
             _IK_LM_Sugihara(ets, Tep, q0, ilimit, slimit, tol, reject_jl, ret, &it, &search, &solution, &E, lambda, we);
         }
         else if (method[0] == 'w')
         {
-            // std::cout << "wampl" << std::endl;
             _IK_LM_Wampler(ets, Tep, q0, ilimit, slimit, tol, reject_jl, ret, &it, &search, &solution, &E, lambda, we);
         }
         else
         {
-            // std::cout << "chan" << std::endl;
             _IK_LM_Chan(ets, Tep, q0, ilimit, slimit, tol, reject_jl, ret, &it, &search, &solution, &E, lambda, we);
         }
 
@@ -507,21 +581,37 @@ extern "C"
             Py_DECREF(py_np_we);
         }
 
-        // Build the return tuple
-        py_it = Py_BuildValue("i", it);
-        py_search = Py_BuildValue("i", search);
-        py_solution = Py_BuildValue("i", solution);
-        py_E = Py_BuildValue("d", E);
+        // Build the return value
+        if (result_provided)
+        {
+            // Write results directly to the pre-allocated _scalars array
+            // Format: [success, iterations, searches, residual]
+            np_scalars[0] = (double)solution;
+            np_scalars[1] = (double)it;
+            np_scalars[2] = (double)search;
+            np_scalars[3] = E;
 
-        py_tup = PyTuple_Pack(5, py_ret, py_solution, py_it, py_search, py_E);
+            Py_DECREF(py_ret);  // We got this from GetAttrString, need to decref
+            Py_RETURN_NONE;
+        }
+        else
+        {
+            // Full return tuple for backward compatibility
+            py_it = Py_BuildValue("i", it);
+            py_search = Py_BuildValue("i", search);
+            py_solution = Py_BuildValue("i", solution);
+            py_E = Py_BuildValue("d", E);
 
-        Py_DECREF(py_it);
-        Py_DECREF(py_search);
-        Py_DECREF(py_solution);
-        Py_DECREF(py_E);
-        Py_DECREF(py_ret);
+            py_tup = PyTuple_Pack(5, py_ret, py_solution, py_it, py_search, py_E);
 
-        return py_tup;
+            Py_DECREF(py_it);
+            Py_DECREF(py_search);
+            Py_DECREF(py_solution);
+            Py_DECREF(py_E);
+            Py_DECREF(py_ret);
+
+            return py_tup;
+        }
     }
 
     static PyObject *Robot_link_T(PyObject *self, PyObject *args)

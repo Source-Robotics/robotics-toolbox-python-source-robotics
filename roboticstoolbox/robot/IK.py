@@ -101,6 +101,101 @@ class IKSolution:
                 )
 
 
+class IKResultBuffer:
+    """
+    Pre-allocated result buffer for IK solver to avoid per-call allocations.
+
+    This class provides a zero-allocation hot path for the IK solver by using
+    pre-allocated numpy arrays that the C extension can write directly into.
+
+    Attributes
+    ----------
+    q
+        Pre-allocated array for joint coordinates (modified in-place by IK solver)
+    success
+        True if a valid solution was found (read from _scalars[0] > 0)
+    iterations
+        How many iterations were performed (read from _scalars[1])
+    searches
+        How many searches were performed (read from _scalars[2])
+    residual
+        The final error value from the cost function (read from _scalars[3])
+
+    Examples
+    --------
+    >>> import roboticstoolbox as rtb
+    >>> panda = rtb.models.Panda()
+    >>> ets = panda.ets()
+    >>> result = rtb.IKResultBuffer(ets.n)
+    >>> Tep = panda.fkine([0, -0.3, 0, -2.2, 0, 2, 0.7854])
+    >>> ets.ik_LM(Tep.A, result=result)  # Writes directly to result
+    >>> if result.success:
+    ...     print(f"Solution: {result.q}")
+
+    """
+
+    __slots__ = ("q", "_scalars")
+
+    def __init__(self, n_joints: int):
+        """
+        Create a pre-allocated IK result buffer.
+
+        Parameters
+        ----------
+        n_joints
+            Number of joints in the robot (determines size of q array)
+        """
+        self.q = np.zeros(n_joints, dtype=np.float64)
+        # [success, iterations, searches, residual] stored as doubles
+        # for direct C pointer access without Python object allocation
+        self._scalars = np.zeros(4, dtype=np.float64)
+
+    @property
+    def success(self) -> bool:
+        """True if IK solver found a valid solution."""
+        return self._scalars[0] > 0
+
+    @property
+    def iterations(self) -> int:
+        """Total iterations performed across all searches."""
+        return int(self._scalars[1])
+
+    @property
+    def searches(self) -> int:
+        """Number of search restarts performed."""
+        return int(self._scalars[2])
+
+    @property
+    def residual(self) -> float:
+        """Final pose error value."""
+        return self._scalars[3]
+
+    def __repr__(self) -> str:
+        if self.q is not None:
+            q_str = np.array2string(
+                self.q,
+                separator=", ",
+                formatter={
+                    "float": lambda x: "{:.4g}".format(0 if abs(x) < 1e-6 else x)
+                },
+            )
+        else:
+            q_str = "None"
+
+        if self.success:
+            return (
+                f"IKResultBuffer: q={q_str}, success=True,"
+                f" iterations={self.iterations}, searches={self.searches},"
+                f" residual={self.residual:.3g}"
+            )
+        else:
+            return (
+                f"IKResultBuffer: q={q_str}, success=False,"
+                f" iterations={self.iterations}, searches={self.searches},"
+                f" residual={self.residual:.3g}"
+            )
+
+
 class IKSolver(ABC):
     """
     An abstract super class for numerical inverse kinematics (IK)
