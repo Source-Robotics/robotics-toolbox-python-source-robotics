@@ -4,7 +4,7 @@ name = "roboticstoolbox-python"
 
 description = "A Python library for robotics education and research"
 
-version = "1.2.7"
+version = "1.2.8"
 
 authors = [
     { name = "Jesse Haviland", email = "j.haviland@qut.edu.au" },
