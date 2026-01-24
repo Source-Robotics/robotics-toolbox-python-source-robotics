@@ -1018,15 +1018,17 @@ extern "C"
         npy_float64 *ret, *retp, *q, *qp, *base = NULL, *tool = NULL;
         PyObject *py_q, *py_base, *py_tool, *py_np_q, *py_np_tool, *py_np_base;
         PyObject *py_ret, *py_ets;
+        PyObject *py_out = NULL;  // Optional pre-allocated output buffer
         npy_intp *q_shape;
 
         if (!PyArg_ParseTuple(
-                args, "OOOOi",
+                args, "OOOOi|O",
                 &py_ets,
                 &py_q,
                 &py_base,
                 &py_tool,
-                &include_base))
+                &include_base,
+                &py_out))
             return NULL;
 
         // Extract the ETS object from the python object
@@ -1077,22 +1079,69 @@ extern "C"
             }
         }
 
-        // Allocate return array
-        if (trajn == 1)
+        // Check if pre-allocated buffer was provided
+        if (py_out != NULL && py_out != Py_None)
         {
-            py_ret = PyArray_EMPTY(2, dim2, NPY_DOUBLE, 1);
+            // Validate: must be contiguous float64 array (C or F order both ok)
+            if (!PyArray_Check(py_out) ||
+                PyArray_TYPE((PyArrayObject *)py_out) != NPY_DOUBLE ||
+                !(PyArray_IS_C_CONTIGUOUS((PyArrayObject *)py_out) ||
+                  PyArray_IS_F_CONTIGUOUS((PyArrayObject *)py_out)))
+            {
+                PyErr_SetString(PyExc_ValueError,
+                    "output buffer must be a contiguous float64 array");
+                Py_DECREF(py_np_q);
+                return NULL;
+            }
+
+            // Validate dimensions
+            int out_ndim = PyArray_NDIM((PyArrayObject *)py_out);
+            npy_intp *out_shape = PyArray_SHAPE((PyArrayObject *)py_out);
+
+            if (trajn == 1)
+            {
+                if (out_ndim != 2 || out_shape[0] != 4 || out_shape[1] != 4)
+                {
+                    PyErr_SetString(PyExc_ValueError,
+                        "output buffer must be shape (4, 4)");
+                    Py_DECREF(py_np_q);
+                    return NULL;
+                }
+            }
+            else
+            {
+                if (out_ndim != 3 || out_shape[0] != trajn ||
+                    out_shape[1] != 4 || out_shape[2] != 4)
+                {
+                    PyErr_SetString(PyExc_ValueError,
+                        "output buffer shape mismatch");
+                    Py_DECREF(py_np_q);
+                    return NULL;
+                }
+            }
+
+            py_ret = py_out;
+            Py_INCREF(py_ret);
         }
         else
         {
-            // if using a trajectory, make a duplicate of ret as we will need to
-            // extreme reshape it due to Fortran ordering
-            // Fortran ordering of 3D array wants (4, 4, n) while numpy looping
-            // typically likes to have (n, 4, 4)
+            // Allocate new array (existing behavior)
+            if (trajn == 1)
+            {
+                py_ret = PyArray_EMPTY(2, dim2, NPY_DOUBLE, 1);
+            }
+            else
+            {
+                // if using a trajectory, make a duplicate of ret as we will need to
+                // extreme reshape it due to Fortran ordering
+                // Fortran ordering of 3D array wants (4, 4, n) while numpy looping
+                // typically likes to have (n, 4, 4)
 
-            // therefore we make the returned python array (n, 4, 4) and row-major
-            // and later on we transpose each (4, 4) component
-            dim3[0] = trajn;
-            py_ret = PyArray_EMPTY(3, dim3, NPY_DOUBLE, 0);
+                // therefore we make the returned python array (n, 4, 4) and row-major
+                // and later on we transpose each (4, 4) component
+                dim3[0] = trajn;
+                py_ret = PyArray_EMPTY(3, dim3, NPY_DOUBLE, 0);
+            }
         }
 
         // Get numpy reference to return array
