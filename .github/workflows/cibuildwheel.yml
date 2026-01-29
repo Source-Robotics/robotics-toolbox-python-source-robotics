@@ -41,6 +41,11 @@ jobs:
             arch: AMD64
             cibw_archs: AMD64
 
+          # Windows ARM64
+          - os: windows-11-arm
+            arch: ARM64
+            cibw_archs: ARM64
+
     steps:
       - uses: actions/checkout@v4
 

@@ -195,8 +195,8 @@ archs = ["x86_64", "aarch64"]
 
 [tool.cibuildwheel.windows]
 
-# On an Windows Intel runner build AMD64 wheels only
-archs = ["AMD64"]
+# AMD64 and ARM64 wheels (ARM64 uses native windows-11-arm runner)
+archs = ["AMD64", "ARM64"]
 
 
 [tool.coverage.run]
