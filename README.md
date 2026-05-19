@@ -4,7 +4,7 @@
 > This repository is a fork of the upstream Robotics Toolbox for Python with the following differences:
 > - **Joint wrapping behavior**: joint solutions are only wrapped when doing so helps satisfy joint limits, preventing wrap-induced limit violations.
 > - **Performance**: DHRobot now uses LRU caching to speed up repeated computations.
-> - **Optional visualization deps**: `spatialgeometry` and `swift-sim` are now optional. Core kinematics (FK, Jacobian, IK) work without them. Install with `pip install roboticstoolbox-python[viz]` if you need Swift visualization or geometry features.
+> - **Optional visualization deps**: `spatialgeometry` and `swift-sim` are now optional. Core kinematics (FK, Jacobian, IK) work without them. Install with `pip install roboticstoolbox-python-source-robotics[viz]` if you need Swift visualization or geometry features.
 > - **Upstream changes**: incorporates updates from the upstream "future" branch.
 >
 > Upstream project: https://github.com/petercorke/robotics-toolbox-python
@@ -14,13 +14,13 @@
 [![Powered by Spatial Maths](https://raw.githubusercontent.com/petercorke/spatialmath-python/master/.github/svg/sm_powered.min.svg)](https://github.com/petercorke/spatialmath-python)
 [![QUT Centre for Robotics Open Source](https://github.com/qcr/qcr.github.io/raw/master/misc/badge.svg)](https://qcr.github.io)
 
-[![PyPI version](https://badge.fury.io/py/roboticstoolbox-python.svg)](https://badge.fury.io/py/roboticstoolbox-python)
+[![PyPI version](https://badge.fury.io/py/roboticstoolbox-python-source-robotics.svg)](https://badge.fury.io/py/roboticstoolbox-python-source-robotics)
 [![Anaconda version](https://anaconda.org/conda-forge/roboticstoolbox-python/badges/version.svg)](https://anaconda.org/conda-forge/roboticstoolbox-python)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/roboticstoolbox-python.svg)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/roboticstoolbox-python-source-robotics.svg)
 
 [![Build Status](https://github.com/petercorke/robotics-toolbox-python/workflows/Test/badge.svg?branch=master)](https://github.com/petercorke/robotics-toolbox-python/actions?query=workflow%3ATest)
 [![Coverage](https://codecov.io/gh/petercorke/robotics-toolbox-python/branch/master/graph/badge.svg)](https://codecov.io/gh/petercorke/robotics-toolbox-python)
-[![PyPI - Downloads](https://img.shields.io/pypi/dw/roboticstoolbox-python)](https://pypistats.org/packages/roboticstoolbox-python)
+[![PyPI - Downloads](https://img.shields.io/pypi/dw/roboticstoolbox-python-source-robotics)](https://pypistats.org/packages/roboticstoolbox-python-source-robotics)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <table style="border:0px">
@@ -98,14 +98,22 @@ provide support for data types such as SO(n) and SE(n) matrices, quaternions, tw
 
 ## Getting going
 
-You will need Python >= 3.6
+You will need Python >= 3.10
 
 ### Using pip
 
 Install a snapshot from PyPI
 
 ```shell script
-pip3 install roboticstoolbox-python
+pip3 install roboticstoolbox-python-source-robotics
+```
+
+If you already have the upstream package installed, uninstall it first because
+both distributions provide the same `roboticstoolbox` import package:
+
+```shell script
+pip3 uninstall roboticstoolbox-python
+pip3 install roboticstoolbox-python-source-robotics
 ```
 
 Available options are:
@@ -116,7 +124,7 @@ Available options are:
 Put the options in a comma separated list like
 
 ```shell script
-pip3 install roboticstoolbox-python[viz,collision]
+pip3 install roboticstoolbox-python-source-robotics[viz,collision]
 ```
 
 Note: Core kinematics (FK, Jacobian, IK) work without any optional dependencies.
@@ -126,8 +134,8 @@ Note: Core kinematics (FK, Jacobian, IK) work without any optional dependencies.
 To install the bleeding-edge version from GitHub
 
 ```shell script
-git clone https://github.com/petercorke/robotics-toolbox-python.git
-cd robotics-toolbox-python
+git clone https://github.com/Source-Robotics/robotics-toolbox-python-source-robotics.git
+cd robotics-toolbox-python-source-robotics
 pip3 install -e .
 ```
 

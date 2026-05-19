@@ -141,7 +141,7 @@ def make_banner():
     for Python"""
     
     versions = []
-    versions.append(f"RTB=={version('roboticstoolbox-python')}")
+    versions.append(f"RTB=={version('roboticstoolbox-python-source-robotics')}")
     versions.append(f"SMTB=={version('spatialmath-python')}")
     versions.append(f"SG=={version('spatialmath-python')}")
     versions.append(f"NumPy=={version('numpy')}")

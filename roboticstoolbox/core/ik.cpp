@@ -14,37 +14,6 @@
 // #include <Eigen/LU>
 // #include <Eigen/SVD>
 
-static inline double wrapToPi(double x) { return atan2(sin(x), cos(x)); }
-// Smart wrapping: only wrap if it helps satisfy joint limits
-// This is critical for robots with extended joint limits (e.g., >180 or asymmetric ranges)
-static inline void smartWrapping(ETS *ets, Eigen::Map<Eigen::VectorXd> &q) {
-    for (int i = 0; i < ets->n; i++) {
-        double q_orig = q(i);
-        double ql_min = ets->qlim_l[i];
-        double ql_max = ets->qlim_h[i];
-
-        // Check if already within limits
-        if (q_orig >= ql_min && q_orig <= ql_max) {
-            continue;  // Already good, don't wrap
-        }
-
-        // Try wrapping options to see if any work
-        double q_wrapped_pos = q_orig + PI_x2;    // +2pi
-        double q_wrapped_neg = q_orig - PI_x2;    // -2pi
-        double q_wrapped_std = wrapToPi(q_orig);  // [-pi,pi]
-
-        // Use whichever wrapping brings us within limits
-        if (q_wrapped_pos >= ql_min && q_wrapped_pos <= ql_max) {
-            q(i) = q_wrapped_pos;
-        } else if (q_wrapped_neg >= ql_min && q_wrapped_neg <= ql_max) {
-            q(i) = q_wrapped_neg;
-        } else if (q_wrapped_std >= ql_min && q_wrapped_std <= ql_max) {
-            q(i) = q_wrapped_std;
-        }
-        // else: leave as-is, will fail limit check appropriately
-    }
-}
-
 extern "C"
 {
 
@@ -122,7 +91,11 @@ extern "C"
                 {
                     // We have arrived
 
-                    smartWrapping(ets, q);
+                    // wrap q to +- pi
+                    for (int i = 0; i < ets->n; i++)
+                    {
+                        q(i) = std::fmod(q(i) + PI, PI_x2) - PI;
+                    }
 
                     // Check for joint limit violation
                     if (reject_jl)
@@ -168,13 +141,13 @@ extern "C"
             _rand_q(ets, q);
         }
 
-        free(np_e);
-        free(np_Te);
-        free(np_J);
+        PyMem_RawFree(np_e);
+        PyMem_RawFree(np_Te);
+        PyMem_RawFree(np_J);
 
         if (use_pinv)
         {
-            free(np_pinv);
+            PyMem_RawFree(np_pinv);
         }
     }
 
@@ -252,7 +225,11 @@ extern "C"
                 {
                     // We have arrived
 
-                    smartWrapping(ets, q);
+                    // wrap q to +- pi
+                    for (int i = 0; i < ets->n; i++)
+                    {
+                        q(i) = std::fmod(q(i) + PI, PI_x2) - PI;
+                    }
 
                     // Check for joint limit violation
                     if (reject_jl)
@@ -298,13 +275,13 @@ extern "C"
             _rand_q(ets, q);
         }
 
-        free(np_e);
-        free(np_Te);
-        free(np_J);
+        PyMem_RawFree(np_e);
+        PyMem_RawFree(np_Te);
+        PyMem_RawFree(np_J);
 
         if (use_pinv)
         {
-            free(np_J_pinv);
+            PyMem_RawFree(np_J_pinv);
         }
     }
 
@@ -374,7 +351,11 @@ extern "C"
                 {
                     // We have arrived
 
-                    smartWrapping(ets, q);
+                    // wrap q to +- pi
+                    for (int i = 0; i < ets->n; i++)
+                    {
+                        q(i) = std::fmod(q(i) + PI, PI_x2) - PI;
+                    }
 
                     // Check for joint limit violation
                     if (reject_jl)
@@ -399,8 +380,8 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                // q += (J.transpose() * We * J + Wn).inverse() * g;
-                q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
+                q += (J.transpose() * We * J + Wn).inverse() * g;
+                // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
             }
@@ -417,9 +398,9 @@ extern "C"
             _rand_q(ets, q);
         }
 
-        free(np_e);
-        free(np_Te);
-        free(np_J);
+        PyMem_RawFree(np_e);
+        PyMem_RawFree(np_Te);
+        PyMem_RawFree(np_J);
     }
 
     void _IK_LM_Wampler(
@@ -484,7 +465,11 @@ extern "C"
                 {
                     // We have arrived
 
-                    smartWrapping(ets, q);
+                    // wrap q to +- pi
+                    for (int i = 0; i < ets->n; i++)
+                    {
+                        q(i) = std::fmod(q(i) + PI, PI_x2) - PI;
+                    }
 
                     // Check for joint limit violation
                     if (reject_jl)
@@ -506,8 +491,8 @@ extern "C"
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                // q += (J.transpose() * We * J + Wn).inverse() * g;
-                q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
+                q += (J.transpose() * We * J + Wn).inverse() * g;
+                // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
             }
@@ -524,9 +509,9 @@ extern "C"
             _rand_q(ets, q);
         }
 
-        free(np_e);
-        free(np_Te);
-        free(np_J);
+        PyMem_RawFree(np_e);
+        PyMem_RawFree(np_Te);
+        PyMem_RawFree(np_J);
     }
 
     void _IK_LM_Sugihara(
@@ -592,7 +577,11 @@ extern "C"
                 {
                     // We have arrived
 
-                    smartWrapping(ets, q);
+                    // wrap q to +- pi
+                    for (int i = 0; i < ets->n; i++)
+                    {
+                        q(i) = std::fmod(q(i) + PI, PI_x2) - PI;
+                    }
 
                     // Check for joint limit violation
                     if (reject_jl)
@@ -610,15 +599,15 @@ extern "C"
                 // Jacobian Matric J
                 _ETS_jacob0(ets, q.data(), (double *)NULL, J);
 
-                // Weighting matrix Wn (Sugihara method)
-                Wn = (*E) * EyeN + lambda * EyeN;
+                // Weighting matrix Wn
+                Wn = *E * EyeN + lambda * EyeN;
 
                 // The vector g
                 g = J.transpose() * We * e;
 
                 // Work out the joint velocity qd
-                // q += (J.transpose() * We * J + Wn).inverse() * g;
-                q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
+                q += (J.transpose() * We * J + Wn).inverse() * g;
+                // q += (J.transpose() * We * J + Wn).colPivHouseholderQr().solve(g);
 
                 iter += 1;
             }
@@ -635,9 +624,9 @@ extern "C"
             _rand_q(ets, q);
         }
 
-        free(np_e);
-        free(np_Te);
-        free(np_J);
+        PyMem_RawFree(np_e);
+        PyMem_RawFree(np_Te);
+        PyMem_RawFree(np_J);
     }
 
     void _pseudo_inverse(Eigen::Map<Eigen::MatrixXd> J, Eigen::Map<Eigen::MatrixXd> J_pinv, double damping)
@@ -690,7 +679,7 @@ extern "C"
         li_norm = li.norm();
 
         R_tr = R.trace();
-        if (li_norm < 1e-12)
+        if (li_norm < 1e-6)
         {
             // diagonal matrix case
             // if np.trace(R) > 0
