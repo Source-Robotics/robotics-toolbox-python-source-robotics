@@ -6,6 +6,7 @@
 > - **Performance**: DHRobot now uses LRU caching to speed up repeated computations.
 > - **Optional visualization deps**: `spatialgeometry` and `swift-sim` are now optional. Core kinematics (FK, Jacobian, IK) work without them. Install with `pip install roboticstoolbox-python-source-robotics[viz]` if you need Swift visualization or geometry features.
 > - **Upstream changes**: incorporates updates from the upstream "future" branch.
+> - **Prebuilt wheels**: Linux ARM64 (Raspberry Pi 5) wheels are published to PyPI via GitHub Actions. See [RELEASING.md](RELEASING.md) for how to trigger a build and verify the wheel.
 >
 > Upstream project: https://github.com/petercorke/robotics-toolbox-python
 

@@ -20,22 +20,22 @@ jobs:
           - os: ubuntu-latest
             arch: x86_64
             cibw_archs: x86_64
-            
-          # Linux aarch64 (native ARM runner, no QEMU needed)
+
+          # Linux aarch64 — native ARM runner, no QEMU (produces Raspberry Pi wheel)
           - os: ubuntu-24.04-arm
             arch: aarch64
             cibw_archs: aarch64
-            
+
           # macOS x86_64 (Intel)
           - os: macos-15-intel
             arch: x86_64
             cibw_archs: x86_64
-            
+
           # macOS arm64 (Apple Silicon)
           - os: macos-latest
             arch: arm64
             cibw_archs: arm64
-            
+
           # Windows AMD64
           - os: windows-latest
             arch: AMD64
@@ -81,14 +81,15 @@ jobs:
           pip install -U cibuildwheel
           python -m cibuildwheel --output-dir wheelhouse
 
-      - name: Upload wheels (artifact for manual runs)
-        if: github.event_name == 'workflow_dispatch'
+      # Always upload artifacts — the publish job downloads these on release,
+      # and they are available for manual inspection on workflow_dispatch runs.
+      - name: Upload wheels artifact
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
 
-      - name: Upload wheels to Release (on releases)
+      - name: Upload wheels to Release assets
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
@@ -116,19 +117,54 @@ jobs:
         run: |
           python -m pip install -U build
           python -m build --sdist
-          
-      - name: Upload sdist (artifact for manual runs)
-        if: github.event_name == 'workflow_dispatch'
+
+      # Always upload — publish job needs this on release runs too.
+      - name: Upload sdist artifact
         uses: actions/upload-artifact@v4
         with:
           name: sdist
           path: dist/*.tar.gz
-          
-      - name: Upload sdist to Release (on releases)
+
+      - name: Upload sdist to Release assets
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.tar.gz
+
+  # Publishes all wheels + sdist to PyPI using OIDC Trusted Publishing.
+  # Runs only when a GitHub Release is created — never on pushes or
+  # workflow_dispatch.  No hardcoded tokens are needed; configure a Trusted
+  # Publisher on PyPI (see RELEASING.md).
+  publish:
+    name: Publish to PyPI
+    needs: [build_wheels, sdist]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    environment: pypi
+    permissions:
+      id-token: write  # required for OIDC Trusted Publishing
+
+    steps:
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist/
+          merge-multiple: true
+
+      - name: Download sdist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist/
+
+      - name: List files to publish
+        run: ls -la dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
 
   update-version:
     name: Update version in codebase
